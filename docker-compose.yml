@@ -1,0 +1,57 @@
+# Docker Compose configuration for Modern Conversational AI System
+version: '3.8'
+
+services:
+  # API Server
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DEFAULT_MODEL_PROVIDER=openai
+      - MAX_TOKENS=1000
+      - TEMPERATURE=0.7
+      - DATABASE_URL=sqlite:///./conversational_ai.db
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: ["python", "start.py", "api"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web Interface
+  web:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - DEFAULT_MODEL_PROVIDER=openai
+      - MAX_TOKENS=1000
+      - TEMPERATURE=0.7
+      - DATABASE_URL=sqlite:///./conversational_ai.db
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: ["python", "start.py", "web"]
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # Database (optional - for production)
+  # postgres:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_DB: conversational_ai
+  #     POSTGRES_USER: ai_user
+  #     POSTGRES_PASSWORD: ai_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+volumes:
+  postgres_data:
